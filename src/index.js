@@ -90,8 +90,12 @@ function makePrompter(makeCustomQuestions = () => []) {
         console.log(chalk.green(`\n${getCommitTypeMessage(type)}\n`));
         console.log('\n\nCommit message:');
         console.log(chalk.blue(`\n\n${message}\n`));
-        commit(message)
+        console.log(arguments);
+        commit(message);
       });
+    }).catch((error) => {
+      console.error(error);
+      process.exit(1);
     });
   }
 }

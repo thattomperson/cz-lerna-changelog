@@ -25,6 +25,19 @@ const createMockCommitizenCli = (answers) => ({
   registerPrompt: () => {},
 });
 
+function shouldEqualCommit(expected, cb) {
+  return function (actual) {
+    try {
+      assert.equal(
+        actual.trim(),
+        expected,
+      );
+      cb();
+    } catch (e) {
+      cb(e);
+    }
+  }
+}
 
 describe('cz-lerna-changelog', () => {
   stub(shell, 'exec', () => ({ stdout: '' }));
@@ -44,17 +57,10 @@ describe('cz-lerna-changelog', () => {
       'The packages that this commit has affected (0 detected)\n':                  ['test-package']
     };
 
-    prompter(createMockCommitizenCli(answers), (commitMessage) => {
-      try {
-        assert.equal(
-          commitMessage.trim(),
-          'feat(Fake scope): Test commit\n\naffects: test-package\n\nThis commit is a fake one'
-        );
-        done();
-      } catch (e) {
-        done(e);
-      }
-    })
+    prompter(createMockCommitizenCli(answers), shouldEqualCommit(
+      'feat(Fake scope): Test commit\n\naffects: test-package\n\nThis commit is a fake one',
+      done,
+    ));
   });
   it('allows questions to be overriden', (done) => {
     const answers = {
@@ -75,16 +81,27 @@ describe('cz-lerna-changelog', () => {
       },
     ])
 
-    makePrompter(makeCustomQuestions)(createMockCommitizenCli(answers), (commitMessage) => {
-      try {
-        assert.equal(
-          commitMessage.trim(),
-          'feat(Fake scope): Test commit\n\naffects: test-package\n\nThis commit is a fake one'
-        );
-        done();
-      } catch (e) {
-        done(e);
-      }
-    })
+    makePrompter(makeCustomQuestions)(createMockCommitizenCli(answers), shouldEqualCommit(
+      'feat(Fake scope): Test commit\n\naffects: test-package\n\nThis commit is a fake one',
+      done,
+    ));
+  });
+
+  it('does not wrap the affects line', (done) => {
+    const longPackageName = 'a'.repeat(95);
+    const answers = {
+      'Select the type of change that you\'re committing:':                         'feat',
+      'Denote the scope of this change:':                                           'Fake scope',
+      'Write a short, imperative tense description of the change:\n':               'Test commit',
+      'Provide a longer description of the change (optional). Use "|" to break new line:\n': 'This commit is a fake one',
+      'List any BREAKING CHANGES (optional):\n':                                    '',
+      'List any ISSUES CLOSED by this change (optional). E.g.: #31, #34:\n':        '',
+      'The packages that this commit has affected (0 detected)\n':                  ['a'.repeat(95), '123456']
+    };
+
+    prompter(createMockCommitizenCli(answers), shouldEqualCommit(
+      `feat(Fake scope): Test commit\n\naffects: ${longPackageName}, 123456\n\nThis commit is a fake one`,
+      done,
+    ));
   });
 });
