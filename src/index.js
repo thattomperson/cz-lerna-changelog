@@ -6,6 +6,7 @@ import buildCommit from 'cz-customizable/buildCommit';
 import autocomplete from 'inquirer-autocomplete-prompt';
 import Repository from 'lerna/lib/Repository';
 import PackageUtilities from 'lerna/lib/PackageUtilities';
+import wrap from 'word-wrap';
 
 import makeDefaultQuestions from './make-default-questions';
 import autocompleteQuestions from './autocomplete-questions';
@@ -61,6 +62,14 @@ function mergeQuestions(defaultQuestions, customQuestions) {
   return questions;
 }
 
+function insertAffectsLine(message, affectsLine) {
+  if (!affectsLine) {
+    return message;
+  }
+  const messageLines = message.split('\n');
+  return [messageLines[0], `\n${affectsLine}`, ...messageLines.slice(1)].join('\n');
+}
+
 function makePrompter(makeCustomQuestions = () => []) {
   return function(cz, commit) {
     const allPackages = getAllPackages().map((pkg) => pkg.name);
@@ -77,10 +86,8 @@ function makePrompter(makeCustomQuestions = () => []) {
       autocompleteQuestions(questions)
     ).then((answers) => {
       const affectsLine = makeAffectsLine(answers);
-      if (affectsLine) {
-        answers.body = `${affectsLine}\n` + answers.body;
-      }
-      const message = buildCommit(answers);
+      const messageWithoutAffectsLine = buildCommit(answers);
+      const message = insertAffectsLine(messageWithoutAffectsLine, affectsLine);
       const type = commitAnalyzer({}, {
         commits: [{
           hash: '',
