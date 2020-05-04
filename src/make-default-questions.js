@@ -1,6 +1,6 @@
 import Promise from 'promise';
 
-module.exports = (allPackages, changedPackages) => ([
+module.exports = () => ([
   {
     type: 'autocomplete',
     name: 'type',
@@ -48,18 +48,5 @@ module.exports = (allPackages, changedPackages) => ([
     type: 'input',
     name: 'footer',
     message: 'List any ISSUES CLOSED by this change (optional). E.g.: #31, #34:\n',
-  },
-  {
-    type: 'checkbox',
-    name: 'packages',
-    'default': changedPackages,
-    choices: allPackages,
-    message: `The packages that this commit has affected (${changedPackages.length} detected)\n`,
-    // validate: function (input) {
-    //   const type = commitMessage.type;
-    //   const isRequired = ['feat', 'fix'].some((type) => messageHead.indexOf(type) === 0);
-    //   const isProvided = input.length > 0;
-    //   return isRequired ? (isProvided ? true : `Commit type "${type}" must affect at least one component`) : true;
-    // }
   },
 ]);

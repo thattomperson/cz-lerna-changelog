@@ -4,7 +4,7 @@ import { analyzeCommits } from '@semantic-release/commit-analyzer';
 import chalk from 'chalk';
 import buildCommit from 'cz-customizable/buildCommit';
 import autocomplete from 'inquirer-autocomplete-prompt';
-const { getPackages } = require("@lerna/project");
+
 
 import makeDefaultQuestions from './make-default-questions';
 import autocompleteQuestions from './autocomplete-questions';
@@ -13,28 +13,6 @@ const commitAnalyzer = (props, commits, then) => analyzeCommits(props, commits)
   .then((result) => then(null, result))
   .catch(then)
 
-function getAllPackages() {
-  return getPackages();
-}
-
-function getChangedPackages(allPackages) {
-  const changedFiles = shell.exec('git diff --cached --name-only', { silent: true })
-    .stdout
-    .split('\n');
-
-  return allPackages
-    .filter(function (pkg) {
-      const packagePrefix = path.relative('.', pkg.location) + path.sep;
-      for (let changedFile of changedFiles) {
-        if (changedFile.indexOf(packagePrefix) === 0) {
-          return true;
-        }
-      }
-    })
-    .map(function (pkg) {
-      return pkg.name
-    });
-}
 
 function makeAffectsLine(answers) {
   const selectedPackages = answers.packages;
@@ -66,38 +44,35 @@ function mergeQuestions(defaultQuestions, customQuestions) {
 
 function makePrompter(makeCustomQuestions = () => []) {
   return function (cz, commit) {
-    getAllPackages().then(pkgs => {
-      const allPackages = pkgs.map(pkg => pkg.name);
-      const changedPackages = getChangedPackages(pkgs);
+    
+    const defaultQuestions = makeDefaultQuestions();
+    const customQuestions = makeCustomQuestions();
+    const questions = mergeQuestions(defaultQuestions, customQuestions);
 
-      const defaultQuestions = makeDefaultQuestions(allPackages, changedPackages);
-      const customQuestions = makeCustomQuestions(allPackages, changedPackages);
-      const questions = mergeQuestions(defaultQuestions, customQuestions);
+    console.log('\n\nLine 1 will be cropped at 100 characters. All other lines will be wrapped after 100 characters.\n');
 
-      console.log('\n\nLine 1 will be cropped at 100 characters. All other lines will be wrapped after 100 characters.\n');
-
-      cz.registerPrompt('autocomplete', autocomplete);
-      cz.prompt(
-        autocompleteQuestions(questions)
-      ).then((answers) => {
-        const affectsLine = makeAffectsLine(answers);
-        if (affectsLine) {
-          answers.body = `${affectsLine}\n` + answers.body;
-        }
-        const message = buildCommit(answers);
-        const type = commitAnalyzer({}, {
-          commits: [{
-            hash: '',
-            message,
-          }],
-        }, (err, type) => {
-          console.log(chalk.green(`\n${getCommitTypeMessage(type)}\n`));
-          console.log('\n\nCommit message:');
-          console.log(chalk.blue(`\n\n${message}\n`));
-          commit(message)
-        });
+    cz.registerPrompt('autocomplete', autocomplete);
+    cz.prompt(
+      autocompleteQuestions(questions)
+    ).then((answers) => {
+      const affectsLine = makeAffectsLine(answers);
+      if (affectsLine) {
+        answers.body = `${affectsLine}\n` + answers.body;
+      }
+      const message = buildCommit(answers);
+      const type = commitAnalyzer({}, {
+        commits: [{
+          hash: '',
+          message,
+        }],
+      }, (err, type) => {
+        console.log(chalk.green(`\n${getCommitTypeMessage(type)}\n`));
+        console.log('\n\nCommit message:');
+        console.log(chalk.blue(`\n\n${message}\n`));
+        commit(message)
       });
-    })
+    });
+
   }
 }
 

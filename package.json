@@ -1,5 +1,5 @@
 {
-  "name": "cz-lerna-changelog",
+  "name": "@thattomperosn/cz-changelog",
   "description": "Commitizen adapter following the conventional-changelog format.",
   "main": "lib/index.js",
   "version": "2.0.2",
